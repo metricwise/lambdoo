@@ -18,11 +18,11 @@ uid = None
 # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format
 def make_response(func):
     @functools.wraps(func)
-    def wrapper(event, *args):
+    def wrapper(event, context):
         global _logger
         _logger.debug("request %s", event)
         try:
-            message = func(event, *args) or http.HTTPStatus.OK.phrase
+            message = func(event, context) or http.HTTPStatus.OK.phrase
             code = http.HTTPStatus.OK.value
         except xmlrpc.client.Fault as e:
             _logger.error(e.faultString)
