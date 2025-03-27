@@ -9,7 +9,6 @@ import xmlrpc.client
 import boto3
 
 _logger = logging.getLogger(__name__)
-_logger.setLevel(os.environ.get('LOG_LEVEL', logging.ERROR))
 
 ssm = None
 uid = None
@@ -69,3 +68,22 @@ def execute(model, method, args, kwargs):
 
     with xmlrpc.client.ServerProxy(f"{host}/xmlrpc/2/object", context=context) as object:
         return object.execute_kw(database, uid, password, model, method, args, kwargs)
+
+
+# https://docs.aws.amazon.com/lambda/latest/dg/example_serverless_SQS_Lambda_section.html
+# https://docs.aws.amazon.com/lambda/latest/dg/example_serverless_SQS_Lambda_batch_item_failures_section.html
+def wraps_sqs(func):
+    @functools.wraps(func)
+    def wrapper(event, context):
+        _logger.debug("request %s", event)
+        batch_item_failures = []
+        for record in event['Records']:
+            try:
+                func(record, context)
+            except Exception as e:
+                _logger.exception("%s", e)
+                batch_item_failures.append({'itemIdentifier': record['messageId']})
+        response = {'batchItemFailures': batch_item_failures}
+        _logger.debug("response %s", response)
+        return response
+    return wrapper
