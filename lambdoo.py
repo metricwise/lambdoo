@@ -77,11 +77,14 @@ def wraps_sqs(func):
     def wrapper(event, context):
         _logger.debug("request %s", event)
         batch_item_failures = []
+        _logger.info("processing %s messages", len(event['Records']))
         for record in event['Records']:
             try:
-                func(record, context)
-            except Exception as e:
-                _logger.exception("%s", e)
+                _logger.info("processing message %s", record['messageId'])
+                result = func(record, context)
+                _logger.debug("result %s", result)
+            except Exception:
+                _logger.exception("processing failed")
                 batch_item_failures.append({'itemIdentifier': record['messageId']})
         response = {'batchItemFailures': batch_item_failures}
         _logger.debug("response %s", response)
