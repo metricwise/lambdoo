@@ -2,7 +2,6 @@
 
 import json
 import logging
-import xmlrpc.client
 
 import boto3
 
@@ -19,5 +18,5 @@ def sqs_email_gateway(event, context):
     bucket = body['receipt']['action']['bucketName']
     key = body['receipt']['action']['objectKey']
     _logger.info("processing email s3://%s/%s", bucket, key)
-    msg = s3.get_object(Bucket=bucket, Key=key)['Body'].read()
-    execute('mail.thread', 'message_process', [False, xmlrpc.client.Binary(msg)], {})
+    message = s3.get_object(Bucket=bucket, Key=key)['Body'].read().decode('utf-8')
+    execute('mail.thread', 'message_process', [False, message], {})
